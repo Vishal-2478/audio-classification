@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+tensorboard_logs/
+.env
+*.pth
+*.wav
+node_modules/
+.next/
