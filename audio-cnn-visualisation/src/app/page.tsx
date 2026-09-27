@@ -29,6 +29,8 @@ interface WaveformData {
 
 interface ApiResponse {
   predictions: Prediction[];
+  is_confident?: boolean;
+  confidence_threshold?: number;
   visualization: VisualizationData;
   input_spectrogram: LayerData;
   waveform: WaveformData;
@@ -153,14 +155,14 @@ export default function HomePage() {
         setVizData(data);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "An unknown error occured",
+          err instanceof Error ? err.message : "An unknown error occurred",
         );
       } finally {
         setIsLoading(false);
       }
     };
     reader.onerror = () => {
-      setError("Failed ot read the file.");
+      setError("Failed to read the file.");
       setIsLoading(false);
     };
   };
@@ -168,6 +170,11 @@ export default function HomePage() {
   const { main, internals } = vizData
     ? splitLayers(vizData?.visualization)
     : { main: [], internals: {} };
+
+  // Older backends don't send these fields, so default to "confident".
+  const isConfident = vizData?.is_confident ?? true;
+  const threshold = vizData?.confidence_threshold ?? 0;
+  const topPrediction = vizData?.predictions[0];
 
   return (
     <main className="min-h-screen bg-stone-50 p-8">
@@ -221,10 +228,27 @@ export default function HomePage() {
 
         {vizData && (
           <div className="space-y-8">
+            {!isConfident && topPrediction && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent>
+                  <p className="text-lg font-medium text-amber-900">
+                    🤔 Unknown sound
+                  </p>
+                  <p className="mt-1 text-amber-800">
+                    The best guess is only{" "}
+                    {(topPrediction.confidence * 100).toFixed(1)}% confident,
+                    below the {(threshold * 100).toFixed(0)}% threshold. The
+                    model only knows 50 sound types, so this sound is probably
+                    not one of them. The closest matches are shown below.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-stone-900">
-                  Top Predictions
+                  {isConfident ? "Top Predictions" : "Closest Matches"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -236,7 +260,9 @@ export default function HomePage() {
                           {getEmojiForClass(pred.class)}{" "}
                           <span>{pred.class.replaceAll("_", " ")}</span>
                         </div>
-                        <Badge variant={i === 0 ? "default" : "secondary"}>
+                        <Badge
+                          variant={i === 0 && isConfident ? "default" : "secondary"}
+                        >
                           {(pred.confidence * 100).toFixed(1)}%
                         </Badge>
                       </div>

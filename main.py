@@ -23,6 +23,12 @@ image = (
 
 model_volume = modal.Volume.from_name("esc-model")
 
+# If the model's top guess is less confident than this, we call the sound
+# "unknown" instead of trusting the guess. The model can only answer with one
+# of its 50 classes, so a low score usually means "none of these fit well".
+# Pick the value from `python -m modal run evaluate.py` (it prints a recommendation).
+CONFIDENCE_THRESHOLD = 0.40
+
 
 class AudioProcessor:
     def __init__(self):
@@ -124,8 +130,12 @@ class AudioClassifier:
             else:
                 waveform_data = audio_data
 
+        top_confidence = predictions[0]["confidence"]
+
         response = {
             "predictions": predictions,
+            "is_confident": top_confidence >= CONFIDENCE_THRESHOLD,
+            "confidence_threshold": CONFIDENCE_THRESHOLD,
             "visualization": viz_data,
             "input_spectrogram": {
                 "shape": list(clean_spectrogram.shape),
@@ -161,8 +171,11 @@ def main():
     if waveform_info:
         values = waveform_info.get("values", {})
         print(f"First 10 values: {[round(v, 4) for v in values[:10]]}...")
-        print(f"Duration: {waveform_info.get("duration", 0)}")
+        print(f"Duration: {waveform_info.get('duration', 0)}")
+
+    if not result.get("is_confident", True):
+        print(f"Unknown sound (top guess below {result['confidence_threshold']:.0%})")
 
     print("Top predictions:")
     for pred in result.get("predictions", []):
-        print(f"  -{pred["class"]} {pred["confidence"]:0.2%}")
+        print(f"  -{pred['class']} {pred['confidence']:0.2%}")
