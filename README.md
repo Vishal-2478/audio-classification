@@ -28,5 +28,5 @@ with a Next.js dashboard that visualizes the model's internal feature maps.
 
 
 ## Credits
-- Trained on the ESC-50 dataset by Karol J. Piczak: https://github.com/karolpiczak/ESC-50
+- Andreaswt and ESC-50 dataset by Karol J. Piczak: https://github.com/karolpiczak/ESC-50
   (CC BY-NC 3.0). Non-commercial use only.
